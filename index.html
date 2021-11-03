@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>leaflet-map-simple</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="utf-8">
+
+  <!-- Load Leaflet code library: see http://leafletjs.com/download.html -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.7.1/dist/leaflet.css">
+  <script src="https://unpkg.com/leaflet@1.7.1/dist/leaflet.js"></script>
+  <script src="info_image.js"></script>
+
+  <!-- Position the map and title with Cascading Style Sheet (CSS) -->
+  <style>
+  html, body {
+      height: 100%;
+      padding: 0;
+      margin: 0;
+      background: rgb(14, 21, 30);
+      height: 100%;
+      font-family: Tahoma, Geneva, Verdana, sans-serif;
+      font-size:12px;
+      color:#808080;
+  }
+
+  #map {
+      position: relative;
+      height: 100%;
+      width: 100%;
+      background-color: #333;
+  }
+  .leaflet-container img.leaflet-image-layer {
+    max-width: none !important;
+    /* Preserve crisp pixels with scaled up images */
+    image-rendering: optimizeSpeed;             /* Legal fallback */
+    image-rendering: -moz-crisp-edges;          /* Firefox        */
+    image-rendering: -o-crisp-edges;            /* Opera          */
+    image-rendering: -webkit-optimize-contrast; /* Safari         */
+    image-rendering: optimize-contrast;         /* CSS3 Proposed  */
+    image-rendering: crisp-edges;               /* CSS4 Proposed  */
+    image-rendering: pixelated;                 /* CSS4 Proposed  */
+    -ms-interpolation-mode: nearest-neighbor;   /* IE8+           */
+  }
+  #menu {
+    position: relative;
+     display: flex;
+     width: 100%;
+     justify-content:space-around;
+  }
+
+  </style>
+</head>
+<body>
+  <div id="menu">
+
+  <div class="loc">
+    <p>Localisation</p>
+  <select class="dropdown" id="localisation" >
+    <option value="43.35893,1.17496,31" selected>Haute-Garonne</option>
+    <option value="47.84746,-2.81083,56">Morbihan</option>
+    <option value="49.95788,2.27612,80">Somme</option>
+    <option value="45.89225,1.23484,87">Haute-Vienne</option>
+    <option value="48.84810,2.40328,75">Paris</option>
+  </select>
+  </div>
+
+  <div class="loc">
+    <p>Source</p>
+  <select class="dropdown" id="source">
+  </select>
+  </div>
+
+  <div class="loc">
+    <p>Target</p>
+  <select class="dropdown" id="target" >
+  </select>
+  </div>
+
+  </div>
+  <!-- Display the map and title with HTML division tags  -->
+  <div id="map"></div>
+
+
+
+  <!-- Create the interactive map content with JavaScript (.js) -->
+  <script>
+  var source_opt = document.getElementById("source");
+  var target_opt = document.getElementById("target");
+  var loca=document.getElementById("localisation");
+  var mbAttr = 'Map data &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, ' + 'Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
+      mbUrl = 'https://api.mapbox.com/styles/v1/{id}/tiles/{z}/{x}/{y}?access_token=pk.eyJ1IjoibGJhdWRvdXgxIiwiYSI6ImNraXNvdDJqejA1aDAyeG11enI4cW84ZXoifQ.BZ7Io0UjtXwjOSAHfZN73w';
+
+  function removeOptions(selectElement,remove) {
+    // remove=Object.keys(remove)
+   var i, L = selectElement.options.length - 1;
+   for(i = L; i >= 0; i--) {
+     console.log(remove,selectElement.options[i].value)
+     if(  remove.includes(selectElement.options[i].value)){
+      selectElement.remove(i);}
+   }
+}
+var satellite   = L.tileLayer(mbUrl, {id: 'mapbox/satellite-v9', tileSize: 512, zoomOffset: -1, attribution: mbAttr}), streets  = L.tileLayer(mbUrl, {id: 'mapbox/streets-v11', tileSize: 512, zoomOffset: -1, attribution: mbAttr});
+      var baseLayers = {
+            "Satellite": satellite,
+            "Streets": streets
+            };
+
+var oriSourceOverlays = L.layerGroup();
+var oriTargetOverlays = L.layerGroup();
+var translationOverlays = L.layerGroup();
+
+
+      var overlays = {
+      "Source":oriSourceOverlays,
+      "Target":oriTargetOverlays,
+      "Translated":translationOverlays
+      };
+
+  /* Set up the initial map center and zoom level */
+  var map = L.map('map', {
+    center: [48.5185810264104802,1.5094944990968386], // EDIT coordinates to re-center map
+    zoom: 12,  // EDIT from 1 (zoomed out) to 18 (zoomed in)
+    layers: [satellite]
+  });
+  var possible_maps;
+  L.control.layers(baseLayers,overlays).addTo(map);
+
+
+
+  function localisationinfo() {
+  locinf = loca.value.split(',');
+  possible_maps=image_per_zone[locinf[2]]
+  map.panTo([locinf[0],locinf[1]], 12);
+  return locinf}
+  var [x,y,zone]=localisationinfo()
+
+  function sourcelist(zone) {
+    // var possible_maps=image_per_zone[zone];
+    valuesInSelect=  [...source_opt.options].map(o => o.value);
+    // console.log(possible_maps)
+    pm=possible_maps
+    all=[...pm,...valuesInSelect]
+    for (map_name of all ) {
+      console.log(map_name)
+      if (map_name!="CLC" && map_name!=target_opt.value  && ! valuesInSelect.includes(map_name)   && pm.includes(map_name) ){
+
+        opt = document.createElement("option");
+        opt.value = map_name;
+        opt.text = map_name;
+        source_opt.add(opt, source_opt.options[1]);}
+      else if (map_name=="CLC" || map_name==target_opt.value || (valuesInSelect.includes(map_name)  && ! pm.includes(map_name))) {
+        removeOptions(source_opt,[map_name])
+      }
+      else {
+        console.log(map_name)}
+      }
+  };
+  function targetlist(zone) {
+    // var possible_maps=image_per_zone[zone];
+    valuesInSelect=  [...target_opt.options].map(o => o.value);
+    // console.log(possible_maps)
+    pm=possible_maps
+    all=[...pm,...valuesInSelect]
+    for (map_name of all ) {
+      console.log(map_name)
+      if (map_name!=source_opt.value  && ! valuesInSelect.includes(map_name)   && pm.includes(map_name) ){
+
+        opt = document.createElement("option");
+        opt.value = map_name;
+        opt.text = map_name;
+        target_opt.add(opt, target_opt.options[1]);}
+      else if ( map_name==source_opt.value || (valuesInSelect.includes(map_name)  && ! pm.includes(map_name))) {
+        removeOptions(target_opt,[map_name])
+      }
+      else {
+        console.log(map_name)}
+      }
+  };
+sourcelist(zone);
+targetlist(zone);
+display_lulc(source_opt.value,source_opt.value,zone,oriSourceOverlays)
+display_lulc(target_opt.value,target_opt.value,zone,oriTargetOverlays)
+display_lulc(source_opt.value,target_opt.value,zone,translationOverlays)
+loca.addEventListener("change", function() {
+    [x,y,zone]=localisationinfo();
+    sourcelist(zone);
+    targetlist(zone);
+    console.log("zone",source_opt.value,target_opt.value,zone);
+    display_lulc(source_opt.value,source_opt.value,zone,oriSourceOverlays)
+    display_lulc(target_opt.value,target_opt.value,zone,oriTargetOverlays)
+    display_lulc(source_opt.value,target_opt.value,zone,translationOverlays)
+});
+source_opt.addEventListener("change", function() {
+    targetlist(zone);
+    display_lulc(source_opt.value,source_opt.value,zone,oriSourceOverlays)
+    display_lulc(source_opt.value,target_opt.value,zone,translationOverlays)
+});
+source_opt.addEventListener("change", function() {
+    sourcelist(zone);
+    display_lulc(target_opt.value,target_opt.value,zone,oriTargetOverlays)
+    display_lulc(source_opt.value,target_opt.value,zone,translationOverlays)
+});
+
+
+
+    function display_lulc(source,target,zone,lulc) {
+      if (map.hasLayer(lulc)) {
+          lulc.clearLayers();
+    }
+        var point=id_to_coord[zone+'_'+source+'_'+target+'.png'];
+        console.log(id_to_coord,zone+source+target+'.png')
+        L.imageOverlay('public/data/'+zone+'_'+source+'_'+target+'.png', [[point[0][0],point[0][1] ], [point[1][0],point[1][1]]]).addTo(lulc);
+
+      };
+
+
+
+  </script>
+</body>
+</html>
