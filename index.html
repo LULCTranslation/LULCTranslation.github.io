@@ -209,7 +209,7 @@ source_opt.addEventListener("change", function() {
     }
         var point=id_to_coord[zone+'_'+source+'_'+target+'.png'];
         console.log(id_to_coord,zone+source+target+'.png')
-        L.imageOverlay('https://github.com/LULCTranslation/LULCTranslation.github.io/tree/main/public/data/'+zone+'_'+source+'_'+target+'.png', [[point[0][0],point[0][1] ], [point[1][0],point[1][1]]]).addTo(lulc);
+        L.imageOverlay('public/data/'+zone+'_'+source+'_'+target+'.png', [[point[0][0],point[0][1] ], [point[1][0],point[1][1]]]).addTo(lulc);
 
       };
 
